@@ -26,8 +26,8 @@
 
 #ifdef USE_BOOST
 #include <dirent.h>
-#include <boost/filesystem.hpp>
-#include <boost/system/error_code.hpp>
+//#include <boost/filesystem.hpp>
+//#include <boost/system/error_code.hpp>
 #ifndef WIN32
 #include <sys/stat.h>
 #endif
@@ -155,115 +155,23 @@ inline int64_t delete_dir(const std::string &path, bool delete_files_recursively
   if (path.empty()) {
     return -1;
   }
-#ifdef USE_BOOST
   try {
-    if (boost::filesystem::exists(path)) {
+    if (std::filesystem::exists(path)) {
       if (delete_files_recursively) {
-        boost::filesystem::remove_all(path);
+        std::filesystem::remove_all(path);
       } else {
-        boost::filesystem::remove(path);
+        std::filesystem::remove(path);
       }
     }
-  } catch(boost::filesystem::filesystem_error const & e) {
+  } catch(std::filesystem::filesystem_error const & e) {
     return -1;
     // display error message
   }
   return 0;
-#elif defined(WIN32)
-  WIN32_FIND_DATA FindFileData;
-  HANDLE hFind;
-  DWORD Attributes;
-  std::string str;
-
-
-  std::stringstream pathstr;
-  pathstr << path << "\\*";
-  str = pathstr.str();
-  // List files
-  hFind = FindFirstFile(str.c_str(), &FindFileData);
-  if (hFind != INVALID_HANDLE_VALUE) {
-    do {
-      if (strcmp(FindFileData.cFileName, ".") != 0 && strcmp(FindFileData.cFileName, "..") != 0) {
-        std::stringstream strs;
-        strs << path << "\\" << FindFileData.cFileName;
-        str = strs.str();
-
-        Attributes = GetFileAttributes(str.c_str());
-        if (Attributes & FILE_ATTRIBUTE_DIRECTORY) {
-          // is directory
-          delete_dir(str, delete_files_recursively);
-        } else {
-          remove(str.c_str());
-          // not directory
-        }
-      }
-    }while (FindNextFile(hFind, &FindFileData));
-    FindClose(hFind);
-
-    RemoveDirectory(path.c_str());
-  }
-  return 0;
-#else
-  DIR *current_directory = opendir(path.c_str());
-  int r = -1;
-  if (current_directory) {
-    struct dirent *p;
-    r = 0;
-    while (!r && (p = readdir(current_directory))) {
-      int r2 = -1;
-      std::stringstream newpath;
-      if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) {
-        continue;
-      }
-      struct stat statbuf;
-
-      newpath << path << "/" << p->d_name;
-
-      if (!stat(newpath.str().c_str(), &statbuf)) {
-        if (S_ISDIR(statbuf.st_mode)) {
-          if (delete_files_recursively) {
-            r2 = delete_dir(newpath.str(), delete_files_recursively);
-          }
-        } else {
-          r2 = unlink(newpath.str().c_str());
-        }
-      }
-      r = r2;
-    }
-    closedir(current_directory);
-  }
-
-  if (!r) {
-    return rmdir(path.c_str());
-  }
-
-  return 0;
-#endif
 }
 
-inline uint64_t last_write_time(const std::string &path) {
-#ifdef USE_BOOST
-  boost::system::error_code ec;
-  auto result = boost::filesystem::last_write_time(path, ec);
-  if (ec.value() == 0) {
-    return result;
-  }
-#elif defined(WIN32)
-  struct _stat64 result;
-  if (_stat64(path.c_str(), &result) == 0) {
-    return result.st_mtime;
-  }
-#else
-  struct stat result;
-  if (stat(path.c_str(), &result) == 0) {
-    return result.st_mtime;
-  }
-#endif
-  return 0;
-}
-
-inline std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> last_write_time_point(const std::string &path) {
-  return std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>{std::chrono::seconds{last_write_time(path)}};
+inline std::chrono::time_point<std::chrono::file_clock, std::chrono::seconds> last_write_time_point(const std::string &path) {
+  return std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(path));
 }
 
 inline uint64_t file_size(const std::string &path) {
@@ -281,23 +189,6 @@ inline uint64_t file_size(const std::string &path) {
   return 0;
 }
 
-inline bool set_last_write_time(const std::string &path, uint64_t write_time) {
-#ifdef USE_BOOST
-  boost::filesystem::last_write_time(path, write_time);
-  return true;
-#elif defined(WIN32)
-  struct __utimbuf64 utim;
-  utim.actime = write_time;
-  utim.modtime = write_time;
-  return _utime64(path.c_str(), &utim) == 0U;
-#else
-  struct utimbuf utim;
-  utim.actime = write_time;
-  utim.modtime = write_time;
-  return utime(path.c_str(), &utim) == 0U;
-#endif
-}
-
 #ifndef WIN32
 inline bool get_permissions(const std::string &path, uint32_t &permissions) {
   struct stat result;
@@ -309,13 +200,9 @@ inline bool get_permissions(const std::string &path, uint32_t &permissions) {
 }
 
 inline int set_permissions(const std::string &path, const uint32_t permissions) {
-#ifdef USE_BOOST
-  boost::system::error_code ec;
-  boost::filesystem::permissions(path, static_cast<boost::filesystem::perms>(permissions), ec);
+  std::error_code ec;
+  std::filesystem::permissions(path, static_cast<std::filesystem::perms>(permissions), ec);
   return ec.value();
-#else
-  return chmod(path.c_str(), permissions);
-#endif
 }
 #endif
 
@@ -347,68 +234,19 @@ inline bool is_directory(const char * path) {
 #endif
 }
 
-inline bool exists(const std::string& path) {
-#ifdef USE_BOOST
-  return boost::filesystem::exists(path);
-#elif defined(WIN32)
-  struct _stat64 statbuf;
-  return _stat64(path.c_str(), &statbuf) == 0;
-#else
-  struct stat statbuf;
-  return stat(path.c_str(), &statbuf) == 0;
-#endif
-}
 
 inline int create_dir(const std::string& path, bool recursive = true) {
-#ifdef USE_BOOST
-  boost::filesystem::path dir(path);
-  boost::system::error_code ec;
+  std::filesystem::path dir(path);
+  std::error_code ec;
   if (!recursive) {
-    boost::filesystem::create_directory(dir, ec);
+    std::filesystem::create_directory(dir, ec);
   } else {
-    boost::filesystem::create_directories(dir, ec);
+    std::filesystem::create_directories(dir, ec);
   }
   if (ec.value() == 0 || (ec.value() == EEXIST && is_directory(path.c_str()))) {
     return 0;
   }
   return ec.value();
-#else
-  if (!recursive) {
-    if (detail::platform_create_dir(path) != 0 && errno != EEXIST) {
-      return -1;
-    }
-    return 0;
-  }
-  if (detail::platform_create_dir(path) == 0) {
-    return 0;
-  }
-
-  switch (errno) {
-  case ENOENT: {
-    size_t found = path.find_last_of(get_separator());
-
-    if (found == std::string::npos) {
-      return -1;
-    }
-
-    const std::string dir = path.substr(0, found);
-    int res = create_dir(dir, recursive);
-    if (res < 0) {
-      return -1;
-    }
-    return detail::platform_create_dir(path);
-  }
-  case EEXIST: {
-    if (is_directory(path.c_str())) {
-      return 0;
-    }
-    return -1;
-  }
-  default:
-    return -1;
-  }
-  return -1;
-#endif
 }
 
 inline int copy_file(const std::string &path_from, const std::string& dest_path) {
