@@ -64,11 +64,8 @@ class FileUpdateTrigger : public C2Trigger {
       return false;
     }
     auto update_time = std::filesystem::last_write_time(file_);
-    const long update_time_l = (std::chrono::file_clock::to_time_t(
-            std::chrono::time_point_cast<std::chrono::seconds>(update_time)));
-    const long last_update_l = (std::chrono::file_clock::to_time_t(
-            std::chrono::time_point_cast<std::chrono::seconds>(last_update_.load().value())));
-    logger_->log_trace("Last Update is %d and update time is %d", last_update_l , update_time_l);
+    auto last_update_l = last_update_.load().value().time_since_epoch().count();
+    logger_->log_trace("Last Update is %d and update time is %d", last_update_l , update_time.time_since_epoch().count());
     if (update_time > last_update_.load().value()) {
       last_update_ = update_time;
       update_ = true;
