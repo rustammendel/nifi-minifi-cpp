@@ -339,20 +339,7 @@ inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logge
 #endif
 }
 
-inline std::string concat_path(const std::string& root, const std::string& child, bool force_posix = false) {
-  if (root.empty()) {
-    return child;
-  }
-  std::stringstream new_path;
-  if (root.back() == get_separator(force_posix)) {
-    new_path << root << child;
-  } else {
-    new_path << root << get_separator(force_posix) << child;
-  }
-  return new_path.str();
-}
-
-/**
+/*
  * Provides a platform-independent function to list a directory
  * @param dir The directory to start the enumeration from.
  * @param callback Callback is called for every file found: first argument is the path of the directory, second is the filename.
@@ -364,23 +351,23 @@ inline std::string concat_path(const std::string& root, const std::string& child
 inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
                      const std::shared_ptr<core::logging::Logger> &logger, std::function<bool(const std::string&)> dir_callback) {
   logger->log_debug("Performing file listing against %s", dir);
-#ifndef WIN32
-  DIR *d = opendir(dir.c_str());
-  if (!d) {
-    logger->log_warn("Failed to open directory: %s", dir.c_str());
-    return;
+
+  if (!std::filesystem::exists(dir)) {
+	logger->log_warn("Failed to open directory: %s", dir.c_str());
+	return;
   }
 
-  struct dirent *entry;
-  while ((entry = readdir(d)) != NULL) {
-    std::string d_name = entry->d_name;
-    std::string path = concat_path(dir, d_name);
+  for (const auto &entry: std::filesystem::directory_iterator(dir)) {
 
-    struct stat statbuf;
-    if (stat(path.c_str(), &statbuf) != 0) {
-      logger->log_warn("Failed to stat %s", path);
-      continue;
-    }
+	std::string d_name = entry.path().filename().string();
+	std::string path = entry.path().string();
+
+	struct stat statbuf;
+
+	if (stat(path.c_str(), &statbuf) != 0) {
+	  logger->log_warn("Failed to stat %s", path);
+	  continue;
+	}
 
     if (S_ISDIR(statbuf.st_mode)) {
       // if this is a directory
@@ -429,6 +416,17 @@ inline void list_dir(const std::string& dir, std::function<bool(const std::strin
   } while (FindNextFileA(hFind, &FindFileData));
   FindClose(hFind);
 #endif
+	if (S_ISDIR(statbuf.st_mode)) {
+	  // if this is a directory
+	  if (recursive) {
+		list_dir(path, callback, logger, recursive);
+	  }
+	} else {
+	  if (!callback(dir, d_name)) {
+		break;
+	  }
+	}
+  }
 }
 
 inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
@@ -449,6 +447,19 @@ inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::
   list_dir(dir, lambda, logger, recursive);
 
   return fileList;
+}
+
+inline std::string concat_path(const std::string& root, const std::string& child, bool force_posix = false) {
+  if (root.empty()) {
+    return child;
+  }
+  std::stringstream new_path;
+  if (root.back() == get_separator(force_posix)) {
+    new_path << root << child;
+  } else {
+    new_path << root << get_separator(force_posix) << child;
+  }
+  return new_path.str();
 }
 
 inline std::string create_temp_directory(char* format) {
