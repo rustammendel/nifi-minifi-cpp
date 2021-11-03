@@ -23,9 +23,10 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 #ifdef USE_BOOST
-#include <dirent.h>
+//#include <dirent.h>
 //#include <boost/filesystem.hpp>
 //#include <boost/system/error_code.hpp>
 #ifndef WIN32
@@ -219,19 +220,7 @@ inline bool get_uid_gid(const std::string &path, uint64_t &uid, uint64_t &gid) {
 #endif
 
 inline bool is_directory(const char * path) {
-#ifndef WIN32
-  struct stat dir_stat;
-  if (stat(path, &dir_stat) != 0) {
-      return false;
-  }
-  return S_ISDIR(dir_stat.st_mode) != 0;
-#else
-  struct _stat64 dir_stat;
-  if (_stat64(path, &dir_stat) != 0) {
-      return false;
-  }
-  return S_ISDIR(dir_stat.st_mode) != 0;
-#endif
+  return std::filesystem::is_directory(path);
 }
 
 
@@ -258,25 +247,25 @@ inline int copy_file(const std::string &path_from, const std::string& dest_path)
   return 0;
 }
 
-inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
-#ifndef WIN32
+inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &logger, const std::string &originalPath,
+									  const std::string &extension, std::vector<std::string> &accruedFiles) {
 
   struct stat s;
   if (stat(originalPath.c_str(), &s) == 0) {
     if (s.st_mode & S_IFDIR) {
-      DIR *d;
-      d = opendir(originalPath.c_str());
-      if (!d) {
-        return;
-      }
-      // only perform a listing while we are not empty
+	  if (!std::filesystem::exists(originalPath)) {
+		logger->log_warn("Failed to open directory: %s", originalPath.c_str());
+		return;
+	  }
+
+	  // only perform a listing while we are not empty
       logger->log_debug("Performing file listing on %s", originalPath);
 
-      struct dirent *entry;
-      entry = readdir(d);
-      while (entry != nullptr) {
-        std::string d_name = entry->d_name;
-        std::string path = originalPath + "/" + d_name;
+	  for (const auto &entry: std::filesystem::directory_iterator(originalPath)) {
+
+		std::string d_name = entry.path().filename().string();
+		std::string path = entry.path().string();
+
         struct stat statbuf { };
         if (stat(path.c_str(), &statbuf) != 0) {
           logger->log_warn("Failed to stat %s", path);
@@ -284,7 +273,7 @@ inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &lo
         }
         if (S_ISDIR(statbuf.st_mode)) {
           // if this is a directory
-          if (d_name != ".." && d_name != ".") {
+          if (std::filesystem::is_directory(path)) {
             addFilesMatchingExtension(logger, path, extension, accruedFiles);
           }
         } else {
@@ -293,9 +282,7 @@ inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &lo
             accruedFiles.push_back(path);
           }
         }
-        entry = readdir(d);
       }
-      closedir(d);
     } else if (s.st_mode & S_IFREG) {
       if (utils::StringUtils::endsWith(originalPath, extension)) {
         logger->log_info("Adding %s to paths", originalPath);
@@ -308,34 +295,6 @@ inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &lo
   } else {
     logger->log_error("Could not access %s", originalPath);
   }
-#else
-  HANDLE hFind;
-  WIN32_FIND_DATA FindFileData;
-
-  std::string pathToSearch = originalPath + "\\*" + extension;
-  if ((hFind = FindFirstFileA(pathToSearch.c_str(), &FindFileData)) != INVALID_HANDLE_VALUE) {
-    do {
-      struct _stat64 statbuf {};
-
-      std::string path = originalPath + "\\" + FindFileData.cFileName;
-      logger->log_info("Adding %s to paths", path);
-      if (_stat64(path.c_str(), &statbuf) != 0) {
-        logger->log_warn("Failed to stat %s", path);
-        break;
-      }
-      logger->log_info("Adding %s to paths", path);
-      if (S_ISDIR(statbuf.st_mode)) {
-        addFilesMatchingExtension(logger, path, extension, accruedFiles);
-      } else {
-        if (utils::StringUtils::endsWith(path, extension)) {
-          logger->log_info("Adding %s to paths", path);
-          accruedFiles.push_back(path);
-        }
-      }
-    }while (FindNextFileA(hFind, &FindFileData));
-    FindClose(hFind);
-  }
-#endif
 }
 
 /*
