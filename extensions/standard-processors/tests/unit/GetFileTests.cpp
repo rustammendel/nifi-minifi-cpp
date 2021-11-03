@@ -131,7 +131,7 @@ TEST_CASE("GetFile removes the source file if KeepSourceFile is false") {
 
   test_controller.runSession();
 
-  REQUIRE_FALSE(utils::file::FileUtils::exists(test_controller.input_file_name_));
+  REQUIRE_FALSE(std::filesystem::exists(test_controller.input_file_name_));
 }
 
 TEST_CASE("GetFile keeps the source file if KeepSourceFile is true") {
@@ -140,7 +140,7 @@ TEST_CASE("GetFile keeps the source file if KeepSourceFile is true") {
 
   test_controller.runSession();
 
-  REQUIRE(utils::file::FileUtils::exists(test_controller.input_file_name_));
+  REQUIRE(std::filesystem::exists(test_controller.input_file_name_));
 }
 
 TEST_CASE("GetFileHiddenPropertyCheck", "[getFileProperty]") {
