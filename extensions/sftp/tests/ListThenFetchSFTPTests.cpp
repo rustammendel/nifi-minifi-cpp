@@ -164,7 +164,9 @@ class ListThenFetchSFTPTestsFixture {
     file << content;
     file.close();
     if (modification_timestamp != 0U) {
-      REQUIRE(true == std::filesystem::set_last_write_time(full_path, modification_timestamp));
+      std::error_code ec;
+      std::filesystem::last_write_time(full_path, std::filesystem::file_time_type::clock::from_time_t(modification_timestamp),ec);
+      REQUIRE(ec.value() == 0 );
     }
   }
 

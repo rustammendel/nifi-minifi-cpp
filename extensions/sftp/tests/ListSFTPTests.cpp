@@ -150,7 +150,9 @@ class ListSFTPTestsFixture {
     file << content;
     file.close();
     if (modification_timestamp != 0U) {
-      REQUIRE(true == std::filesystem::set_last_write_time(full_path, modification_timestamp));
+      std::error_code ec;
+      std::filesystem::last_write_time(full_path, std::filesystem::file_time_type::clock::from_time_t(modification_timestamp),ec);
+      REQUIRE(ec.value() == 0 );
     }
   }
 
@@ -233,7 +235,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP list one file writes attributes
   testController.runSession(plan, true);
 
   auto file = src_dir + "/vfs/nifi_test/tstFile.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
   std::string mtime_str;
   REQUIRE(true == utils::timeutils::getDateTimeStr(mtime, mtime_str));
   uint64_t uid, gid;
@@ -492,8 +494,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file an
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -520,8 +521,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file ti
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -530,7 +530,9 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file ti
   plan->reset();
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
-  REQUIRE(true == std::filesystem::set_last_write_time(file, mtime + 1));
+  std::error_code ec;
+  std::filesystem::last_write_time(file, std::filesystem::file_time_type::clock::from_time_t(mtime + 1),ec);
+  REQUIRE(ec.value() == 0 );
 
   testController.runSession(plan, true);
 
@@ -757,8 +759,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file anot
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -783,7 +784,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file time
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
 
   testController.runSession(plan, true);
 
@@ -793,7 +794,9 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file time
   plan->reset();
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
-  REQUIRE(true == std::filesystem::set_last_write_time(file, mtime + 1));
+  std::error_code ec;
+  std::filesystem::last_write_time(file, std::filesystem::file_time_type::clock::from_time_t(mtime + 1),ec);
+  REQUIRE(ec.value() == 0 );
 
   testController.runSession(plan, true);
 
@@ -816,7 +819,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file size
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count()/1000000000;
 
   testController.runSession(plan, true);
 
