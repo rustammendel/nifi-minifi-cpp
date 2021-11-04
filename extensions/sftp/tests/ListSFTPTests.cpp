@@ -150,7 +150,7 @@ class ListSFTPTestsFixture {
     file << content;
     file.close();
     if (modification_timestamp != 0U) {
-      REQUIRE(true == std::filesystem::set_last_write_time(full_path, modification_timestamp));
+      REQUIRE(true == std::filesystem::last_write_time(full_path, modification_timestamp));
     }
   }
 
@@ -529,7 +529,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file ti
   plan->reset();
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
-  REQUIRE(true == std::filesystem::set_last_write_time(file, mtime + 1));
+  REQUIRE(true == std::filesystem::last_write_time(file, mtime + 1));
 
   testController.runSession(plan, true);
 
@@ -792,7 +792,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file time
   plan->reset();
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
-  REQUIRE(true == std::filesystem::set_last_write_time(file, mtime + 1));
+  REQUIRE(true == std::filesystem::last_write_time(file, mtime + 1));
 
   testController.runSession(plan, true);
 
