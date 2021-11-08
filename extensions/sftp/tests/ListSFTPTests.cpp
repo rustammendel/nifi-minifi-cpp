@@ -232,7 +232,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP list one file writes attributes
   testController.runSession(plan, true);
 
   auto file = src_dir + "/vfs/nifi_test/tstFile.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
   std::string mtime_str;
   REQUIRE(true == utils::timeutils::getDateTimeStr(mtime, mtime_str));
   uint64_t uid, gid;
@@ -491,8 +491,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file an
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -519,8 +518,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file ti
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -756,8 +754,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file anot
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
-
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
   testController.runSession(plan, true);
 
   REQUIRE(LogTestController::getInstance().contains("from ListSFTP to relationship success"));
@@ -782,7 +779,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file time
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
 
   testController.runSession(plan, true);
 
@@ -815,7 +812,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file size
   createFileWithModificationTimeDiff("nifi_test/file1.ext", "Test content 1");
 
   auto file = src_dir + "/vfs/nifi_test/file1.ext";
-  auto mtime = std::filesystem::last_write_time(file);
+  auto mtime = std::filesystem::last_write_time(file).time_since_epoch().count();
 
   testController.runSession(plan, true);
 
