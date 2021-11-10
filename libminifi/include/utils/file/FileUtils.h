@@ -258,7 +258,7 @@ inline int copy_file(const std::string &path_from, const std::string& dest_path)
   return 0;
 }
 
-inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
+inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
 #ifndef WIN32
 
   struct stat s;
@@ -338,6 +338,59 @@ inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logge
 #endif
 }
 
+/*
+ * Provides a platform-independent function to list a directory
+ * Callback is called for every file found: first argument is the path of the directory, second is the filename
+ * Return value of the callback is used to continue (true) or stop (false) listing
+ */
+inline void list_dir(const std::string &dir, std::function<bool(const std::string &, const std::string &)> callback,
+					 const std::shared_ptr<logging::Logger> &logger, bool recursive = true) {
+
+  logger->log_debug("Performing file listing against %s", dir);
+
+  if (!std::filesystem::exists(dir)) {
+	logger->log_warn("Failed to open directory: %s", dir.c_str());
+	return;
+  }
+
+  for (const auto &entry: std::filesystem::directory_iterator(dir)) {
+
+	std::string d_name = entry.path().filename().string();
+	std::string path = entry.path().string();
+
+	struct stat statbuf;
+
+	if (stat(path.c_str(), &statbuf) != 0) {
+	  logger->log_warn("Failed to stat %s", path);
+	  continue;
+	}
+
+	if (S_ISDIR(statbuf.st_mode)) {
+	  // if this is a directory
+	  if (recursive) {
+		list_dir(path, callback, logger, recursive);
+	  }
+	} else {
+	  if (!callback(dir, d_name)) {
+		break;
+	  }
+	}
+  }
+}
+
+inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::string& dir, const std::shared_ptr<logging::Logger> &logger,
+    bool recursive = true)  {
+  std::vector<std::pair<std::string, std::string>> fileList;
+  auto lambda = [&fileList] (const std::string &path, const std::string &filename) {
+    fileList.push_back(make_pair(path, filename));
+    return true;
+  };
+
+  list_dir(dir, lambda, logger, recursive);
+
+  return fileList;
+}
+
 inline std::string concat_path(const std::string& root, const std::string& child, bool force_posix = false) {
   if (root.empty()) {
     return child;
@@ -349,105 +402,6 @@ inline std::string concat_path(const std::string& root, const std::string& child
     new_path << root << get_separator(force_posix) << child;
   }
   return new_path.str();
-}
-
-/**
- * Provides a platform-independent function to list a directory
- * @param dir The directory to start the enumeration from.
- * @param callback Callback is called for every file found: first argument is the path of the directory, second is the filename.
- * Return value of the callback is used to continue (true) or stop (false) listing
- * @param logger
- * @param dir_callback Called for every child directory, its return value decides if we should descend and recursively
- * process that directory or not.
- */
-inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
-                     const std::shared_ptr<core::logging::Logger> &logger, std::function<bool(const std::string&)> dir_callback) {
-  logger->log_debug("Performing file listing against %s", dir);
-#ifndef WIN32
-  DIR *d = opendir(dir.c_str());
-  if (!d) {
-    logger->log_warn("Failed to open directory: %s", dir.c_str());
-    return;
-  }
-
-  struct dirent *entry;
-  while ((entry = readdir(d)) != NULL) {
-    std::string d_name = entry->d_name;
-    std::string path = concat_path(dir, d_name);
-
-    struct stat statbuf;
-    if (stat(path.c_str(), &statbuf) != 0) {
-      logger->log_warn("Failed to stat %s", path);
-      continue;
-    }
-
-    if (S_ISDIR(statbuf.st_mode)) {
-      // if this is a directory
-      if (strcmp(d_name.c_str(), "..") != 0 && strcmp(d_name.c_str(), ".") != 0) {
-        if (dir_callback(dir)) {
-          list_dir(path, callback, logger, dir_callback);
-        }
-      }
-    } else {
-      if (!callback(dir, d_name)) {
-        break;
-      }
-    }
-  }
-  closedir(d);
-#else
-  HANDLE hFind;
-  WIN32_FIND_DATA FindFileData;
-
-  std::string pathToSearch = dir + "\\*.*";
-  hFind = FindFirstFileA(pathToSearch.c_str(), &FindFileData);
-
-  if (hFind == INVALID_HANDLE_VALUE) {
-    logger->log_warn("Failed to open directory: %s", dir.c_str());
-    return;
-  }
-
-  do {
-    struct _stat64 statbuf {};
-    if (strcmp(FindFileData.cFileName, ".") != 0 && strcmp(FindFileData.cFileName, "..") != 0) {
-      std::string path = concat_path(dir, FindFileData.cFileName);
-      if (_stat64(path.c_str(), &statbuf) != 0) {
-        logger->log_warn("Failed to stat %s", path);
-        continue;
-      }
-      if (S_ISDIR(statbuf.st_mode)) {
-        if (dir_callback(dir)) {
-          list_dir(path, callback, logger, dir_callback);
-        }
-      } else {
-        if (!callback(dir, FindFileData.cFileName)) {
-          break;
-        }
-      }
-    }
-  } while (FindNextFileA(hFind, &FindFileData));
-  FindClose(hFind);
-#endif
-}
-
-inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
-                     const std::shared_ptr<core::logging::Logger> &logger, bool recursive = true) {
-  list_dir(dir, callback, logger, [&] (const std::string&) {
-    return recursive;
-  });
-}
-
-inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::string& dir, const std::shared_ptr<core::logging::Logger> &logger,
-    bool recursive = true)  {
-  std::vector<std::pair<std::string, std::string>> fileList;
-  auto lambda = [&fileList] (const std::string &path, const std::string &filename) {
-    fileList.push_back(make_pair(path, filename));
-    return true;
-  };
-
-  list_dir(dir, lambda, logger, recursive);
-
-  return fileList;
 }
 
 inline std::string create_temp_directory(char* format) {
