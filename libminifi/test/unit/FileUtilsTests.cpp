@@ -147,7 +147,7 @@ TEST_CASE("TestFileUtils::create_dir", "[TestCreateDir]") {
   std::string test_dir_path = std::string(dir) + FileUtils::get_separator() + "random_dir";
 
   REQUIRE(FileUtils::create_dir(test_dir_path, false) == 0);  // Dir has to be created successfully
-  REQUIRE(utils::file::exists(test_dir_path));  // Check if directory exists
+  REQUIRE(std::filesystem::exists(test_dir_path));  // Check if directory exists
   REQUIRE(FileUtils::create_dir(test_dir_path, false) == 0);  // Dir already exists, success should be returned
   REQUIRE(FileUtils::delete_dir(test_dir_path, false) == 0);  // Delete should be successful as well
   test_dir_path += "/random_dir2";
@@ -163,7 +163,7 @@ TEST_CASE("TestFileUtils::create_dir recursively", "[TestCreateDir]") {
     "random_dir2" + FileUtils::get_separator() + "random_dir3";
 
   REQUIRE(FileUtils::create_dir(test_dir_path) == 0);  // Dir has to be created successfully
-  REQUIRE(utils::file::exists(test_dir_path));  // Check if directory exists
+  REQUIRE(std::filesystem::exists(test_dir_path));  // Check if directory exists
   REQUIRE(FileUtils::create_dir(test_dir_path) == 0);  // Dir already exists, success should be returned
   REQUIRE(FileUtils::delete_dir(test_dir_path) == 0);  // Delete should be successful as well
 }
