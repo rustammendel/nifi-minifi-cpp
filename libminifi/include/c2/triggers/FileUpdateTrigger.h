@@ -43,7 +43,7 @@ class FileUpdateTrigger : public C2Trigger {
  public:
   FileUpdateTrigger(const std::string& name, const utils::Identifier& uuid = {}) // NOLINT
       : C2Trigger(name, uuid),
-        last_update_(std::filesystem::file_time_type()),
+        last_update_(std::filesystem::file_time_type{}),
         update_(false),
         logger_(core::logging::LoggerFactory<FileUpdateTrigger>::getLogger()) {
   }
@@ -59,14 +59,14 @@ class FileUpdateTrigger : public C2Trigger {
   }
 
   virtual bool triggered() {
-    if (!last_update_.load().has_value()) {
+    if (!last_update_.has_value()) {
       logger_->log_trace("Last Update is zero");
       return false;
     }
     auto update_time = std::filesystem::last_write_time(file_);
-    auto last_update_l = last_update_.load().value().time_since_epoch().count();
+    auto last_update_l = last_update_.value().load().time_since_epoch().count();
     logger_->log_trace("Last Update is %d and update time is %d", last_update_l , update_time.time_since_epoch().count());
-    if (update_time > last_update_.load().value()) {
+    if (update_time > last_update_.value().load()) {
       last_update_ = update_time;
       update_ = true;
       return true;
@@ -110,7 +110,7 @@ class FileUpdateTrigger : public C2Trigger {
 
  protected:
   std::string file_;
-  std::atomic<std::optional<std::filesystem::file_time_type>> last_update_;
+  std::optional<std::atomic<std::filesystem::file_time_type>> last_update_;
   std::atomic<bool> update_;
 
  private:
