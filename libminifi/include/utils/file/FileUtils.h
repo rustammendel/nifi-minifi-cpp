@@ -246,7 +246,7 @@ inline int copy_file(const std::string &path_from, const std::string &dest_path)
   return 0;
 }
 
-inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &logger, const std::string &originalPath,
+inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger, const std::string &originalPath,
                                       const std::string &extension, std::vector<std::string> &accruedFiles) {
   struct stat s;
   if (stat(originalPath.c_str(), &s) == 0) {
@@ -294,13 +294,17 @@ inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &lo
   }
 }
 
-/*
+/**
  * Provides a platform-independent function to list a directory
- * Callback is called for every file found: first argument is the path of the directory, second is the filename
+ * @param dir The directory to start the enumeration from.
+ * @param callback Callback is called for every file found: first argument is the path of the directory, second is the filename.
  * Return value of the callback is used to continue (true) or stop (false) listing
+ * @param logger
+ * @param dir_callback Called for every child directory, its return value decides if we should descend and recursively
+ * process that directory or not.
  */
-inline void list_dir(const std::string &dir, std::function<bool(const std::string &, const std::string &)> callback,
-                     const std::shared_ptr<logging::Logger> &logger, bool recursive = true) {
+inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger, std::function<bool(const std::string&)> dir_callback) {
   logger->log_debug("Performing file listing against %s", dir);
   if (!std::filesystem::exists(dir)) {
     logger->log_warn("Failed to open directory: %s", dir.c_str());
@@ -319,8 +323,8 @@ inline void list_dir(const std::string &dir, std::function<bool(const std::strin
 
     if (S_ISDIR(statbuf.st_mode)) {
       // if this is a directory
-      if (recursive) {
-        list_dir(path, callback, logger, recursive);
+      if (dir_callback) {
+        list_dir(path, callback, logger, dir_callback);
       }
     } else {
       if (!callback(dir, d_name)) {
@@ -329,9 +333,15 @@ inline void list_dir(const std::string &dir, std::function<bool(const std::strin
     }
   }
 }
+inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger, bool recursive = true) {
+  list_dir(dir, callback, logger, [&] (const std::string&) {
+    return recursive;
+  });
+}
 
 inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::string &dir,
-                                                                     const std::shared_ptr<logging::Logger> &logger,
+                                                                     const std::shared_ptr<core::logging::Logger> &logger,
                                                                      bool recursive = true) {
   std::vector<std::pair<std::string, std::string>> fileList;
   auto lambda = [&fileList](const std::string &path, const std::string &filename) {

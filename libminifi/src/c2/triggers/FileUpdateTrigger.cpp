@@ -44,8 +44,6 @@ C2Payload FileUpdateTrigger::getAction() {
   return response_payload;
 }
 
-REGISTER_RESOURCE(FileUpdateTrigger, "Defines a file update trigger when the last write time of a file has been changed.");
-
 } /* namespace c2 */
 } /* namespace minifi */
 } /* namespace nifi */

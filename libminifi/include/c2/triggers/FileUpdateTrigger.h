@@ -45,7 +45,7 @@ class FileUpdateTrigger : public C2Trigger {
       : C2Trigger(name, uuid),
         last_update_(std::filesystem::file_time_type()),
         update_(false),
-        logger_(logging::LoggerFactory<FileUpdateTrigger>::getLogger()) {
+        logger_(core::logging::LoggerFactory<FileUpdateTrigger>::getLogger()) {
   }
 
   void initialize(const std::shared_ptr<minifi::Configure> &configuration) {
@@ -114,10 +114,8 @@ class FileUpdateTrigger : public C2Trigger {
   std::atomic<bool> update_;
 
  private:
-  std::shared_ptr<logging::Logger> logger_;
+  std::shared_ptr<core::logging::Logger> logger_;
 };
-// add the trigger to the known resources.
-REGISTER_RESOURCE(FileUpdateTrigger, "Defines a file update trigger when the last write time of a file has been changed.");
 
 }  // namespace c2
 }  // namespace minifi
