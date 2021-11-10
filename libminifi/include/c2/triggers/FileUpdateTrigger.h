@@ -24,6 +24,7 @@
 #include "c2/C2Trigger.h"
 #include "utils/StringUtils.h"
 #include "utils/file/FileUtils.h"
+#include "core/Resource.h"
 #include "c2/C2Payload.h"
 #include "properties/Configure.h"
 
@@ -42,14 +43,15 @@ class FileUpdateTrigger : public C2Trigger {
  public:
   FileUpdateTrigger(const std::string& name, const utils::Identifier& uuid = {}) // NOLINT
       : C2Trigger(name, uuid),
-        last_update_(0),
-        update_(false) {
+        last_update_(std::filesystem::file_time_type{}),
+        update_(false),
+        logger_(logging::LoggerFactory<FileUpdateTrigger>::getLogger()) {
   }
 
   void initialize(const std::shared_ptr<minifi::Configure> &configuration) {
     if (nullptr != configuration) {
       if (configuration->get(minifi::Configure::nifi_c2_file_watch, "c2.file.watch", file_)) {
-        last_update_ = utils::file::FileUtils::last_write_time(file_);
+        last_update_ = std::filesystem::last_write_time(file_);
       } else {
         logger_->log_trace("Could not configure file");
       }
@@ -57,13 +59,17 @@ class FileUpdateTrigger : public C2Trigger {
   }
 
   virtual bool triggered() {
-    if (last_update_ == 0) {
+    if (!last_update_.load().has_value()) {
       logger_->log_trace("Last Update is zero");
       return false;
     }
-    auto update_time = utils::file::FileUtils::last_write_time(file_);
-    logger_->log_trace("Last Update is %d and update time is %d", last_update_.load(), update_time);
-    if (update_time > last_update_) {
+    auto update_time = std::filesystem::last_write_time(file_);
+    const long update_time_l = (std::chrono::file_clock::to_time_t(
+            std::chrono::time_point_cast<std::chrono::seconds>(update_time)));
+    const long last_update_l = (std::chrono::file_clock::to_time_t(
+            std::chrono::time_point_cast<std::chrono::seconds>(last_update_.load().value())));
+    logger_->log_trace("Last Update is %d and update time is %d", last_update_l , update_time_l);
+    if (update_time > last_update_.load().value()) {
       last_update_ = update_time;
       update_ = true;
       return true;
@@ -73,7 +79,7 @@ class FileUpdateTrigger : public C2Trigger {
 
   virtual void reset() {
     // reset the last write time
-    last_update_ = utils::file::FileUtils::last_write_time(file_);
+    last_update_ = std::filesystem::last_write_time(file_);
     update_ = false;
   }
 
@@ -107,12 +113,14 @@ class FileUpdateTrigger : public C2Trigger {
 
  protected:
   std::string file_;
-  std::atomic<uint64_t> last_update_;
+  std::atomic<std::optional<std::filesystem::file_time_type>> last_update_;
   std::atomic<bool> update_;
 
  private:
-  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<FileUpdateTrigger>::getLogger();
+  std::shared_ptr<logging::Logger> logger_;
 };
+// add the trigger to the known resources.
+REGISTER_RESOURCE(FileUpdateTrigger, "Defines a file update trigger when the last write time of a file has been changed.");
 
 }  // namespace c2
 }  // namespace minifi
