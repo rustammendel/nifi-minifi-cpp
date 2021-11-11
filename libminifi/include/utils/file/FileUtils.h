@@ -41,7 +41,7 @@
 
 #ifdef WIN32
 #ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
 #include <WinSock2.h>
@@ -93,6 +93,7 @@
 #define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
 #endif
 
+
 namespace org {
 namespace apache {
 namespace nifi {
@@ -103,7 +104,7 @@ namespace file {
 namespace FileUtils = ::org::apache::nifi::minifi::utils::file;
 
 namespace detail {
-static inline int platform_create_dir(const std::string &path) {
+static inline int platform_create_dir(const std::string& path) {
 #ifdef WIN32
   return _mkdir(path.c_str());
 #else
@@ -238,7 +239,7 @@ inline int create_dir(const std::string &path, bool recursive = true) {
   return ec.value();
 }
 
-inline int copy_file(const std::string &path_from, const std::string &dest_path) {
+inline int copy_file(const std::string &path_from, const std::string& dest_path) {
   std::ifstream src(path_from, std::ios::binary);
   if (!src.is_open())
     return -1;
@@ -247,8 +248,7 @@ inline int copy_file(const std::string &path_from, const std::string &dest_path)
   return 0;
 }
 
-inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &logger, const std::string &originalPath,
-                                      const std::string &extension, std::vector<std::string> &accruedFiles) {
+inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
   struct stat s;
   if (stat(originalPath.c_str(), &s) == 0) {
     if (s.st_mode & S_IFDIR) {
@@ -295,13 +295,30 @@ inline void addFilesMatchingExtension(const std::shared_ptr<logging::Logger> &lo
   }
 }
 
-/*
+inline std::string concat_path(const std::string& root, const std::string& child, bool force_posix = false) {
+  if (root.empty()) {
+    return child;
+  }
+  std::stringstream new_path;
+  if (root.back() == get_separator(force_posix)) {
+    new_path << root << child;
+  } else {
+    new_path << root << get_separator(force_posix) << child;
+  }
+  return new_path.str();
+}
+
+/**
  * Provides a platform-independent function to list a directory
- * Callback is called for every file found: first argument is the path of the directory, second is the filename
+ * @param dir The directory to start the enumeration from.
+ * @param callback Callback is called for every file found: first argument is the path of the directory, second is the filename.
  * Return value of the callback is used to continue (true) or stop (false) listing
+ * @param logger
+ * @param dir_callback Called for every child directory, its return value decides if we should descend and recursively
+ * process that directory or not.
  */
-inline void list_dir(const std::string &dir, std::function<bool(const std::string &, const std::string &)> callback,
-                     const std::shared_ptr<logging::Logger> &logger, bool recursive = true) {
+inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger, std::function<bool(const std::string&)> dir_callback) {
   logger->log_debug("Performing file listing against %s", dir);
   if (!std::filesystem::exists(dir)) {
     logger->log_warn("Failed to open directory: %s", dir.c_str());
@@ -320,8 +337,8 @@ inline void list_dir(const std::string &dir, std::function<bool(const std::strin
 
     if (S_ISDIR(statbuf.st_mode)) {
       // if this is a directory
-      if (recursive) {
-        list_dir(path, callback, logger, recursive);
+      if (dir_callback) {
+        list_dir(path, callback, logger, dir_callback);
       }
     } else {
       if (!callback(dir, d_name)) {
@@ -331,11 +348,17 @@ inline void list_dir(const std::string &dir, std::function<bool(const std::strin
   }
 }
 
-inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::string &dir,
-                                                                     const std::shared_ptr<logging::Logger> &logger,
-                                                                     bool recursive = true) {
+inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger, bool recursive = true) {
+  list_dir(dir, callback, logger, [&] (const std::string&) {
+    return recursive;
+  });
+}
+
+inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::string& dir, const std::shared_ptr<core::logging::Logger> &logger,
+    bool recursive = true)  {
   std::vector<std::pair<std::string, std::string>> fileList;
-  auto lambda = [&fileList](const std::string &path, const std::string &filename) {
+  auto lambda = [&fileList] (const std::string &path, const std::string &filename) {
     fileList.push_back(make_pair(path, filename));
     return true;
   };
@@ -345,20 +368,7 @@ inline std::vector<std::pair<std::string, std::string>> list_dir_all(const std::
   return fileList;
 }
 
-inline std::string concat_path(const std::string &root, const std::string &child, bool force_posix = false) {
-  if (root.empty()) {
-    return child;
-  }
-  std::stringstream new_path;
-  if (root.back() == get_separator(force_posix)) {
-    new_path << root << child;
-  } else {
-    new_path << root << get_separator(force_posix) << child;
-  }
-  return new_path.str();
-}
-
-inline std::string create_temp_directory(char *format) {
+inline std::string create_temp_directory(char* format) {
 #ifdef WIN32
   const std::string tempDirectory = concat_path(get_temp_directory(),
       minifi::utils::IdGenerator::getIdGenerator()->generate().to_string());
@@ -370,8 +380,7 @@ inline std::string create_temp_directory(char *format) {
 #endif
 }
 
-inline std::tuple<std::string /*parent_path*/, std::string /*child_path*/> split_path(const std::string &path,
-                                                                                      bool force_posix = false) {
+inline std::tuple<std::string /*parent_path*/, std::string /*child_path*/> split_path(const std::string& path, bool force_posix = false) {
   if (path.empty()) {
     /* Empty path has no parent and no child*/
     return std::make_tuple("", "");
@@ -441,19 +450,19 @@ inline std::tuple<std::string /*parent_path*/, std::string /*child_path*/> split
   return std::make_tuple(std::move(parent), std::move(child));
 }
 
-inline std::string get_parent_path(const std::string &path, bool force_posix = false) {
+inline std::string get_parent_path(const std::string& path, bool force_posix = false) {
   std::string parent_path;
   std::tie(parent_path, std::ignore) = split_path(path, force_posix);
   return parent_path;
 }
 
-inline std::string get_child_path(const std::string &path, bool force_posix = false) {
+inline std::string get_child_path(const std::string& path, bool force_posix = false) {
   std::string child_path;
   std::tie(std::ignore, child_path) = split_path(path, force_posix);
   return child_path;
 }
 
-inline bool is_hidden(const std::string &path) {
+inline bool is_hidden(const std::string& path) {
 #ifdef WIN32
   DWORD attributes = GetFileAttributesA(path.c_str());
     return ((attributes != INVALID_FILE_ATTRIBUTES)  && ((attributes & FILE_ATTRIBUTE_HIDDEN) != 0));
@@ -514,7 +523,7 @@ inline std::string get_executable_path() {
 #endif
 }
 
-inline std::string resolve(const std::string &base, const std::string &path) {
+inline std::string resolve(const std::string& base, const std::string& path) {
   if (utils::file::isAbsolutePath(path.c_str())) {
     return path;
   }
@@ -576,5 +585,4 @@ bool contains(const std::filesystem::path& file_path, std::string_view text_to_s
 }  // namespace nifi
 }  // namespace apache
 }  // namespace org
-
 #endif  // LIBMINIFI_INCLUDE_UTILS_FILE_FILEUTILS_H_
