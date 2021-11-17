@@ -317,8 +317,10 @@ inline std::string concat_path(const std::string& root, const std::string& child
  * @param dir_callback Called for every child directory, its return value decides if we should descend and recursively
  * process that directory or not.
  */
-inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
-                     const std::shared_ptr<core::logging::Logger> &logger, std::function<bool(const std::string&)> dir_callback) {
+inline void list_dir(const std::string& dir,
+                     std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger,
+                     std::function<bool(const std::string&)> dir_callback) {
   logger->log_debug("Performing file listing against %s", dir);
   if (!std::filesystem::exists(dir)) {
     logger->log_warn("Failed to open directory: %s", dir.c_str());
@@ -337,7 +339,7 @@ inline void list_dir(const std::string& dir, std::function<bool(const std::strin
 
     if (S_ISDIR(statbuf.st_mode)) {
       // if this is a directory
-      if (dir_callback) {
+      if (dir_callback(dir)) {
         list_dir(path, callback, logger, dir_callback);
       }
     } else {
@@ -348,8 +350,10 @@ inline void list_dir(const std::string& dir, std::function<bool(const std::strin
   }
 }
 
-inline void list_dir(const std::string& dir, std::function<bool(const std::string&, const std::string&)> callback,
-                     const std::shared_ptr<core::logging::Logger> &logger, bool recursive = true) {
+inline void list_dir(const std::string& dir,
+                     std::function<bool(const std::string&, const std::string&)> callback,
+                     const std::shared_ptr<core::logging::Logger> &logger,
+                     bool recursive = true) {
   list_dir(dir, callback, logger, [&] (const std::string&) {
     return recursive;
   });
