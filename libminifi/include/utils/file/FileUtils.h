@@ -336,7 +336,7 @@ inline void list_dir(const std::string& dir,
       continue;
     }
 
-    if (S_ISDIR(statbuf.st_mode)) {
+    if (S_ISDIR(statbuf.st_mode)&&std::filesystem::is_directory(path)) {
       // if this is a directory
       if (dir_callback(dir)) {
         list_dir(path, callback, logger, dir_callback);
