@@ -151,7 +151,7 @@ class ListSFTPTestsFixture {
     file.close();
     if (modification_timestamp != 0U) {
       std::error_code ec;
-      std::filesystem::last_write_time(full_path, std::filesystem::file_time_type::clock::from_time_t(modification_timestamp),ec);
+      std::filesystem::last_write_time(full_path, std::chrono::file_clock::from_time_t(modification_timestamp),ec);
       REQUIRE(ec.value() == 0 );
     }
   }
@@ -531,7 +531,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Timestamps one file ti
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
   std::error_code ec;
-  std::filesystem::last_write_time(file, std::filesystem::file_time_type::clock::from_time_t(mtime + 1),ec);
+  std::filesystem::last_write_time(file, std::chrono::file_clock::from_time_t(mtime + 1),ec);
   REQUIRE(ec.value() == 0 );
 
   testController.runSession(plan, true);
@@ -795,7 +795,7 @@ TEST_CASE_METHOD(ListSFTPTestsFixture, "ListSFTP Tracking Entities one file time
   LogTestController::getInstance().resetStream(LogTestController::getInstance().log_output);
 
   std::error_code ec;
-  std::filesystem::last_write_time(file, std::filesystem::file_time_type::clock::from_time_t(mtime + 1),ec);
+  std::filesystem::last_write_time(file, std::chrono::file_clock::from_time_t(mtime + 1),ec);
   REQUIRE(ec.value() == 0 );
 
   testController.runSession(plan, true);
