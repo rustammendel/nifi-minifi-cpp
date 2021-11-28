@@ -326,7 +326,7 @@ inline void list_dir(const std::string& dir,
     return;
   }
 
-  for (const auto &entry: std::filesystem::directory_iterator(dir)) {
+  for (const auto &entry: std::filesystem::directory_iterator(dir,std::filesystem::directory_options::skip_permission_denied)) {
     std::string d_name = entry.path().filename().string();
     std::string path = entry.path().string();
     struct stat statbuf;
@@ -336,7 +336,7 @@ inline void list_dir(const std::string& dir,
       continue;
     }
 
-    if (S_ISDIR(statbuf.st_mode)&&std::filesystem::is_directory(path)) {
+    if (S_ISDIR(statbuf.st_mode)) {
       // if this is a directory
       if (dir_callback(dir)) {
         list_dir(path, callback, logger, dir_callback);
