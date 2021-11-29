@@ -326,7 +326,7 @@ inline void list_dir(const std::string& dir,
     return;
   }
 
-  for (const auto &entry: std::filesystem::directory_iterator(dir,std::filesystem::directory_options::skip_permission_denied)) {
+  for (const auto &entry: std::filesystem::directory_iterator(dir, std::filesystem::directory_options::skip_permission_denied)) {
     std::string d_name = entry.path().filename().string();
     std::string path = entry.path().string();
     struct stat statbuf;
