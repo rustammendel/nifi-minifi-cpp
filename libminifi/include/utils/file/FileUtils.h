@@ -151,6 +151,20 @@ inline std::string get_temp_directory() {
 #endif
 }
 
+template<typename TimeUnit, typename TimePoint>
+uint64_t getTimeStamp(const TimePoint& time_point) {
+  return std::chrono::duration_cast<TimeUnit>(time_point.time_since_epoch()).count();
+}
+
+/**
+ * Converts the time since epoch into a time point
+ * @returns the time point matching the input timestamp
+ */
+template<typename TimeUnit, typename ClockType>
+std::chrono::time_point<ClockType> getTimePoint(uint64_t timestamp) {
+  return std::chrono::time_point<ClockType>() + TimeUnit(timestamp);
+}
+
 inline int64_t delete_dir(const std::string &path, bool delete_files_recursively = true) {
   // Empty path is interpreted as the root of the current partition on Windows, which should not be allowed
   if (path.empty()) {
