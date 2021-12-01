@@ -160,7 +160,7 @@ class PutSFTPTestsFixture {
     gsl_Expects(mtime >= 0);
     std::stringstream resultFile;
     resultFile << dst_dir << "/vfs/" << relative_path;
-    REQUIRE(gsl::narrow<uint64_t>(mtime) == std::filesystem::last_write_time(resultFile.str()).time_since_epoch().count()/1000000000);
+    REQUIRE(gsl::narrow<uint64_t>(mtime) == gsl::narrow<uint64_t>(std::filesystem::last_write_time(resultFile.str()).time_since_epoch().count()/1000000000));
   }
 
   void testPermissions(const std::string& relative_path, uint32_t expected_permissions) {
