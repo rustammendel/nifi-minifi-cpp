@@ -596,6 +596,8 @@ inline std::string get_file_content(const std::string &file_name) {
 
 bool contains(const std::filesystem::path& file_path, std::string_view text_to_search);
 
+time_t to_time_t(const std::filesystem::file_time_type time);
+
 }  // namespace file
 }  // namespace utils
 }  // namespace minifi
