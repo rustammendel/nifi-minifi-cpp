@@ -262,47 +262,33 @@ inline int copy_file(const std::string &path_from, const std::string& dest_path)
 }
 
 inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
-  struct stat s;
-  if (stat(originalPath.c_str(), &s) == 0) {
-    if (s.st_mode & S_IFDIR) {
-      if (!std::filesystem::exists(originalPath)) {
-        logger->log_warn("Failed to open directory: %s", originalPath.c_str());
-        return;
-      }
-
-      // only perform a listing while we are not empty
-      logger->log_debug("Performing file listing on %s", originalPath);
-
-      for (const auto &entry: std::filesystem::directory_iterator(originalPath)) {
-        std::string d_name = entry.path().filename().string();
-        std::string path = entry.path().string();
-
-        struct stat statbuf{};
-        if (stat(path.c_str(), &statbuf) != 0) {
-          logger->log_warn("Failed to stat %s", path);
-          return;
-        }
-        if (S_ISDIR(statbuf.st_mode)) {
-          // if this is a directory
-          if (std::filesystem::is_directory(path)) {
-            addFilesMatchingExtension(logger, path, extension, accruedFiles);
-          }
-        } else {
-          if (utils::StringUtils::endsWith(path, extension)) {
-            logger->log_info("Adding %s to paths", path);
-            accruedFiles.push_back(path);
-          }
-        }
-      }
-    } else if (s.st_mode & S_IFREG) {
-      if (utils::StringUtils::endsWith(originalPath, extension)) {
-        logger->log_info("Adding %s to paths", originalPath);
-        accruedFiles.push_back(originalPath);
-      }
-    } else {
-      logger->log_error("Could not stat", originalPath);
+  if (std::filesystem::is_directory(originalPath)) {
+    if (!std::filesystem::exists(originalPath)) {
+      logger->log_warn("Failed to open directory: %s", originalPath.c_str());
+      return;
     }
 
+    // only perform a listing while we are not empty
+    logger->log_debug("Performing file listing on %s", originalPath);
+
+    for (const auto &entry: std::filesystem::directory_iterator(originalPath)) {
+      std::string d_name = entry.path().filename().string();
+      std::string path = entry.path().string();
+
+      if (std::filesystem::is_directory(path)) {          // if this is a directory
+        addFilesMatchingExtension(logger, path, extension, accruedFiles);
+      } else {
+        if (utils::StringUtils::endsWith(path, extension)) {
+          logger->log_info("Adding %s to paths", path);
+          accruedFiles.push_back(path);
+        }
+      }
+    }
+  } else if (std::filesystem::is_regular_file(originalPath)) {
+    if (utils::StringUtils::endsWith(originalPath, extension)) {
+      logger->log_info("Adding %s to paths", originalPath);
+      accruedFiles.push_back(originalPath);
+    }
   } else {
     logger->log_error("Could not access %s", originalPath);
   }
@@ -343,15 +329,8 @@ inline void list_dir(const std::string& dir,
   for (const auto &entry: std::filesystem::directory_iterator(dir, std::filesystem::directory_options::skip_permission_denied)) {
     std::string d_name = entry.path().filename().string();
     std::string path = entry.path().string();
-    struct stat statbuf;
 
-    if (stat(path.c_str(), &statbuf) != 0) {
-      logger->log_warn("Failed to stat %s", path);
-      continue;
-    }
-
-    if (S_ISDIR(statbuf.st_mode)) {
-      // if this is a directory
+    if (std::filesystem::is_directory(path)) {  // if this is a directory
       if (dir_callback(dir)) {
         list_dir(path, callback, logger, dir_callback);
       }
