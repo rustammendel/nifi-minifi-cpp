@@ -168,6 +168,59 @@ TEST_CASE("TestFileUtils::create_dir recursively", "[TestCreateDir]") {
   REQUIRE(FileUtils::delete_dir(test_dir_path) == 0);  // Delete should be successful as well
 }
 
+TEST_CASE("TestFileUtils::list_dir", "[TestListDir]") {
+  TestController testController;
+
+  struct ListDirLogger {};
+  const std::shared_ptr<logging::Logger> logger_{logging::LoggerFactory<ListDirLogger>::getLogger()};
+  LogTestController::getInstance().setDebug<ListDirLogger>();
+
+  // Callback, called for each file entry in the listed directory
+  // Return value is used to break (false) or continue (true) listing
+  auto lambda = [](const std::string &, const std::string &) -> bool {
+    return true;
+  };
+
+  auto dir = testController.createTempDirectory();
+  auto foo = FileUtils::concat_path(dir, "/foo");
+  FileUtils::create_dir(foo);
+
+  FileUtils::list_dir(dir, lambda, logger_, false);
+
+  REQUIRE(LogTestController::getInstance().contains(dir));
+  REQUIRE_FALSE(LogTestController::getInstance().contains(foo));
+}
+
+TEST_CASE("TestFileUtils::list_dir recursively", "[TestListDir]") {
+  TestController testController;
+
+  struct ListDirLogger {};
+  const std::shared_ptr<logging::Logger> logger_{logging::LoggerFactory<ListDirLogger>::getLogger()};
+  LogTestController::getInstance().setDebug<ListDirLogger>();
+
+  // Callback, called for each file entry in the listed directory
+  // Return value is used to break (false) or continue (true) listing
+  auto lambda = [](const std::string &, const std::string &) -> bool {
+    return true;
+  };
+
+  auto dir = testController.createTempDirectory();
+  auto foo = dir + "/foo";
+  auto bar = dir + "/bar";
+  auto fooBaz = dir + "/foo/baz";
+
+  FileUtils::create_dir(foo);
+  FileUtils::create_dir(bar);
+  FileUtils::create_dir(fooBaz);
+
+  FileUtils::list_dir(dir, lambda, logger_, true);
+
+  REQUIRE(LogTestController::getInstance().contains(dir));
+  REQUIRE(LogTestController::getInstance().contains(foo));
+  REQUIRE(LogTestController::getInstance().contains(bar));
+  REQUIRE(LogTestController::getInstance().contains(fooBaz));
+}
+
 TEST_CASE("TestFileUtils::getFullPath", "[TestGetFullPath]") {
   TestController testController;
 
@@ -196,7 +249,6 @@ TEST_CASE("TestFileUtils::getFullPath", "[TestGetFullPath]") {
   REQUIRE(tempDir1 == utils::file::getFullPath(".\\test2\\..\\test1"));
 #endif
 }
-
 
 TEST_CASE("FileUtils::file_size works", "[file_size]") {
   TestController testController;
@@ -327,18 +379,6 @@ TEST_CASE("FileUtils::set_permissions", "[TestSetPermissions]") {
   REQUIRE(perms == 0644);
 }
 #endif
-
-TEST_CASE("FileUtils::exists", "[TestExists]") {
-  TestController testController;
-
-  auto dir = testController.createTempDirectory();
-  auto path = dir + FileUtils::get_separator() + "test_file.txt";
-  std::ofstream outfile(path, std::ios::out | std::ios::binary);
-  auto invalid_path = dir + FileUtils::get_separator() + "test_file2.txt";
-
-  REQUIRE(std::filesystem::exists(path));
-  REQUIRE(!std::filesystem::exists(invalid_path));
-}
 
 TEST_CASE("TestFileUtils::delete_dir should fail with empty path", "[TestEmptyDeleteDir]") {
   TestController testController;
