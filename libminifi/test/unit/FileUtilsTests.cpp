@@ -182,7 +182,7 @@ TEST_CASE("TestFileUtils::list_dir", "[TestListDir]") {
   };
 
   auto dir = testController.createTempDirectory();
-  auto foo = FileUtils::concat_path(dir, "/foo");
+  auto foo = FileUtils::concat_path(dir, "foo");
   FileUtils::create_dir(foo);
 
   FileUtils::list_dir(dir, lambda, logger_, false);
@@ -205,9 +205,9 @@ TEST_CASE("TestFileUtils::list_dir recursively", "[TestListDir]") {
   };
 
   auto dir = testController.createTempDirectory();
-  auto foo = dir + "/foo";
-  auto bar = dir + "/bar";
-  auto fooBaz = dir + "/foo/baz";
+  auto foo = FileUtils::concat_path(dir, "foo");
+  auto bar = FileUtils::concat_path(dir, "bar");
+  auto fooBaz = FileUtils::concat_path(foo, "baz");
 
   FileUtils::create_dir(foo);
   FileUtils::create_dir(bar);
@@ -220,6 +220,68 @@ TEST_CASE("TestFileUtils::list_dir recursively", "[TestListDir]") {
   REQUIRE(LogTestController::getInstance().contains(bar));
   REQUIRE(LogTestController::getInstance().contains(fooBaz));
 }
+
+TEST_CASE("TestFileUtils::addFilesMatchingExtension", "[TestAddFilesMatchingExtension]") {
+  TestController testController;
+
+  struct addFilesMatchingExtension {};
+  const std::shared_ptr<logging::Logger> logger_{logging::LoggerFactory<addFilesMatchingExtension>::getLogger()};
+  LogTestController::getInstance().setInfo<addFilesMatchingExtension>();
+
+  /*dir/
+   * |
+   * |---foo/
+   * |    |
+   * |    |--fooFile.ext
+   * |    |--fooFile.noext
+   * |    |___baz/
+   * |
+   * |---bar/
+   * |    |
+   * |    |__barFile.ext
+   * |
+   * |__level1.ext
+   *
+   * */
+
+  auto dir = testController.createTempDirectory();
+  auto foo = FileUtils::concat_path(dir, "foo");
+  auto fooGood = FileUtils::concat_path(foo, "fooFile.ext");
+  auto fooBad = FileUtils::concat_path(foo, "fooFile.noext");
+  auto fooBaz = FileUtils::concat_path(foo, "baz");
+
+  auto bar = FileUtils::concat_path(dir, "bar");
+  auto barGood = FileUtils::concat_path(bar, "barFile.ext");
+
+  auto level1 = FileUtils::concat_path(dir, "level1.ext");
+
+  FileUtils::create_dir(foo);
+  FileUtils::create_dir(bar);
+  FileUtils::create_dir(fooBaz);
+  std::ofstream out1(fooGood);
+  std::ofstream out2(fooBad);
+  std::ofstream out3(barGood);
+  std::ofstream out4(level1);
+
+  std::vector<std::string> expectedFiles = {fooGood, barGood, level1};
+  std::vector<std::string> accruedFiles;
+
+  FileUtils::addFilesMatchingExtension(logger_, dir, ".ext", accruedFiles);
+
+  bool expectedFilesAdded = accruedFiles.size() == expectedFiles.size();
+
+  for (const auto &file: expectedFiles) {
+    if (!expectedFilesAdded) break;
+    expectedFilesAdded = std::count(accruedFiles.begin(), accruedFiles.end(), file) == 1;
+  }
+
+  REQUIRE(expectedFilesAdded);
+
+  auto fakeDir = FileUtils::concat_path(dir, "fake");
+  FileUtils::addFilesMatchingExtension(logger_, fakeDir, ".ext", accruedFiles);
+  REQUIRE(LogTestController::getInstance().contains("Failed to open directory: " + fakeDir));
+}
+
 
 TEST_CASE("TestFileUtils::getFullPath", "[TestGetFullPath]") {
   TestController testController;

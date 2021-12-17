@@ -261,13 +261,16 @@ inline int copy_file(const std::string &path_from, const std::string& dest_path)
   return 0;
 }
 
-inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger, const std::string &originalPath, const std::string &extension, std::vector<std::string> &accruedFiles) {
-  if (std::filesystem::is_directory(originalPath)) {
-    if (!std::filesystem::exists(originalPath)) {
-      logger->log_warn("Failed to open directory: %s", originalPath.c_str());
-      return;
-    }
+inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logger> &logger,
+                                      const std::string &originalPath,
+                                      const std::string &extension,
+                                      std::vector<std::string> &accruedFiles) {
+  if (!std::filesystem::exists(originalPath)) {
+    logger->log_warn("Failed to open directory: %s", originalPath.c_str());
+    return;
+  }
 
+  if (std::filesystem::is_directory(originalPath)) {
     // only perform a listing while we are not empty
     logger->log_debug("Performing file listing on %s", originalPath);
 
