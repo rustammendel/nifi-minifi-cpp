@@ -108,15 +108,8 @@ class FileUpdateTrigger : public C2Trigger {
     return true;
   }
 
-
-  /**
-   * Returns last_update_
-   */
   std::optional<std::filesystem::file_time_type> getLastUpdate() const;
 
-  /**
-   * Sets last_update_
-   */
   void setLastUpdate(const std::optional<std::filesystem::file_time_type> &last_update);
 
  protected:

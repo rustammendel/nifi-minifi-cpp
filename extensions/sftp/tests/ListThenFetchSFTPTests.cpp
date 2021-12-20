@@ -156,11 +156,11 @@ class ListThenFetchSFTPTestsFixture {
     auto full_path = ss.str();
     std::deque<std::string> parent_dirs;
     std::string parent_dir = full_path;
-    while (!(parent_dir = utils::file::FileUtils::get_parent_path(parent_dir)).empty()) {
+    while (!(parent_dir = utils::file::get_parent_path(parent_dir)).empty()) {
       parent_dirs.push_front(parent_dir);
     }
     for (const auto& dir : parent_dirs) {
-      utils::file::FileUtils::create_dir(dir);
+      utils::file::create_dir(dir);
     }
     file.open(ss.str(), std::ios::out);
     file << content;

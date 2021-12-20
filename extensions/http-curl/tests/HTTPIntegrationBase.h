@@ -234,7 +234,7 @@ class VerifyC2FailedUpdate : public VerifyC2Update {
   void testSetup() override {
     LogTestController::getInstance().setInfo<minifi::FlowController>();
     LogTestController::getInstance().setDebug<minifi::c2::C2Agent>();
-    utils::file::FileUtils::create_dir("content_repository");
+    utils::file::create_dir("content_repository");
   }
 
   void runAssertions() override {
@@ -243,7 +243,7 @@ class VerifyC2FailedUpdate : public VerifyC2Update {
   }
 
   void cleanup() override {
-    utils::file::FileUtils::delete_dir("content_repository", true);
+    utils::file::delete_dir("content_repository", true);
     VerifyC2Update::cleanup();
   }
 };

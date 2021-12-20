@@ -55,7 +55,7 @@ static const std::string ADDITIONALY_CREATED_FILE_CONTENT = "additional file dat
 namespace {
 std::string createTempFile(const std::string &directory, const std::string &file_name, const std::string &contents,
     std::ios_base::openmode open_mode = std::ios::out | std::ios::binary) {
-  std::string full_file_name = directory + utils::file::FileUtils::get_separator() + file_name;
+  std::string full_file_name = directory + utils::file::get_separator() + file_name;
   std::ofstream tmpfile{full_file_name, open_mode};
   tmpfile << contents;
   return full_file_name;
@@ -67,13 +67,13 @@ void appendTempFile(const std::string &directory, const std::string &file_name, 
 }
 
 void removeFile(const std::string &directory, const std::string &file_name) {
-  std::string full_file_name = directory + utils::file::FileUtils::get_separator() + file_name;
+  std::string full_file_name = directory + utils::file::get_separator() + file_name;
   std::remove(full_file_name.c_str());
 }
 
 void renameTempFile(const std::string &directory, const std::string &old_file_name, const std::string &new_file_name) {
-  std::string old_full_file_name = directory + utils::file::FileUtils::get_separator() + old_file_name;
-  std::string new_full_file_name = directory + utils::file::FileUtils::get_separator() + new_file_name;
+  std::string old_full_file_name = directory + utils::file::get_separator() + old_file_name;
+  std::string new_full_file_name = directory + utils::file::get_separator() + new_file_name;
   rename(old_full_file_name.c_str(), new_full_file_name.c_str());
 }
 }  // namespace
@@ -91,7 +91,7 @@ TEST_CASE("TailFile reads the file until the first delimiter", "[simple]") {
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
 
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
@@ -99,7 +99,7 @@ TEST_CASE("TailFile reads the file until the first delimiter", "[simple]") {
   tmpfile.close();
 
   std::stringstream state_file;
-  state_file << dir << utils::file::FileUtils::get_separator() << STATE_FILE;
+  state_file << dir << utils::file::get_separator() << STATE_FILE;
 
   plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::FileName.getName(), temp_file.str());
   plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::Delimiter.getName(), "\n");
@@ -131,7 +131,7 @@ TEST_CASE("TailFile picks up the second line if a delimiter is written between r
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
 
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
@@ -174,7 +174,7 @@ TEST_CASE("TailFile re-reads the file if the state is deleted between runs", "[s
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
 
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
@@ -214,7 +214,7 @@ TEST_CASE("TailFile picks up the state correctly if it is rewritten between runs
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
 
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
@@ -282,7 +282,7 @@ TEST_CASE("TailFile converts the old-style state file to the new-style state", "
 
   auto dir = testController.createTempDirectory();
   std::stringstream state_file;
-  state_file << dir << utils::file::FileUtils::get_separator() << STATE_FILE;
+  state_file << dir << utils::file::get_separator() << STATE_FILE;
 
   auto statefile = state_file.str() + "." + id;
 
@@ -480,7 +480,7 @@ TEST_CASE("TailFile finds the single input file in both Single and Multiple mode
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
   tmpfile << NEWLINE_FILE;
@@ -607,7 +607,7 @@ TEST_CASE("TailFile processes a very long line correctly", "[simple]") {
 
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
   tmpfile << line1 << line2 << line3 << line4;
@@ -683,7 +683,7 @@ TEST_CASE("TailFile processes a long line followed by multiple newlines correctl
   std::shared_ptr<core::Processor> tailfile = plan->addProcessor("TailFile", "tailfileProc");
   auto dir = testController.createTempDirectory();
   std::stringstream temp_file;
-  temp_file << dir << utils::file::FileUtils::get_separator() << TMP_FILE;
+  temp_file << dir << utils::file::get_separator() << TMP_FILE;
   std::ofstream tmpfile;
   tmpfile.open(temp_file.str(), std::ios::out | std::ios::binary);
   tmpfile << line1 << line2 << line3 << line4;
@@ -794,7 +794,7 @@ TEST_CASE("TailFile finds and finishes the renamed file and continues with the n
 
   auto plan = testController.createPlan();
   auto dir = testController.createTempDirectory();
-  std::string in_file = dir + utils::file::FileUtils::get_separator() + "testfifo.txt";
+  std::string in_file = dir + utils::file::get_separator() + "testfifo.txt";
 
   std::ofstream in_file_stream(in_file, std::ios::out | std::ios::binary);
   in_file_stream << NEWLINE_FILE;
