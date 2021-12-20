@@ -24,7 +24,6 @@
 #include "c2/C2Trigger.h"
 #include "utils/StringUtils.h"
 #include "utils/file/FileUtils.h"
-#include "core/Resource.h"
 #include "c2/C2Payload.h"
 #include "properties/Configure.h"
 
@@ -41,10 +40,9 @@ namespace c2 {
  */
 class FileUpdateTrigger : public C2Trigger {
  public:
-  FileUpdateTrigger(const std::string& name, const utils::Identifier& uuid = {}) // NOLINT
+  FileUpdateTrigger(const std::string &name, const utils::Identifier &uuid = {}) // NOLINT
       : C2Trigger(name, uuid),
-        update_(false),
-        logger_(core::logging::LoggerFactory<FileUpdateTrigger>::getLogger()) {
+        update_(false) {
   }
 
   void initialize(const std::shared_ptr<minifi::Configure> &configuration) {

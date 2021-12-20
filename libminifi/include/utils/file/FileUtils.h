@@ -52,7 +52,7 @@
 
 #ifndef WIN32
 #include <unistd.h>
-#include <sys/stat.h>
+#include <sys/stat.h> //NOLINT
 
 #endif
 
