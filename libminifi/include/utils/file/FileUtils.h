@@ -185,9 +185,21 @@ inline int64_t delete_dir(const std::string &path, bool delete_files_recursively
   return 0;
 }
 
+time_t to_time_t(const std::filesystem::file_time_type time);
+
 inline std::chrono::time_point<std::chrono::file_clock,
                                std::chrono::seconds> last_write_time_point(const std::string &path) {
   return std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(path));
+}
+
+
+inline uint64_t last_write_time(const std::string &path) {
+  std::error_code ec;
+  auto result = std::filesystem::last_write_time(path, ec);
+  if (ec.value() == 0) {
+    return to_time_t(result);
+  }
+  return 0;
 }
 
 inline uint64_t file_size(const std::string &path) {
@@ -555,7 +567,6 @@ inline int access(const char *path_name, int mode) {
   return ::access(path_name, mode);
 #endif
 }
-
 #ifdef WIN32
 inline std::error_code hide_file(const char* const file_name) {
     const bool success = SetFileAttributesA(file_name, FILE_ATTRIBUTE_HIDDEN);
@@ -578,7 +589,6 @@ inline std::string get_file_content(const std::string &file_name) {
 
 bool contains(const std::filesystem::path& file_path, std::string_view text_to_search);
 
-time_t to_time_t(const std::filesystem::file_time_type time);
 
 }  // namespace file
 }  // namespace utils
