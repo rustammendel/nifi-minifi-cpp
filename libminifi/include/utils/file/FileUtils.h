@@ -25,14 +25,7 @@
 #include <utility>
 #include <vector>
 
-#ifdef USE_BOOST
-// #include <dirent.h>
-// #include <boost/filesystem.hpp>
-// #include <boost/system/error_code.hpp>
-#ifndef WIN32
-#include <sys/stat.h>
-#endif
-#else
+#ifndef USE_BOOST
 #include <errno.h>
 
 #include <cstdlib>
@@ -59,8 +52,10 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#include <sys/stat.h>
 
 #endif
+
 #include <fcntl.h>
 
 #ifdef WIN32
