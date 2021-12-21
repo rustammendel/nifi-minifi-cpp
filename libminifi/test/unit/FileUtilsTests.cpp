@@ -324,7 +324,7 @@ TEST_CASE("FileUtils::last_write_time and last_write_time_point work", "[last_wr
   std::string dir = testController.createTempDirectory();
 
   std::string test_file = dir + FileUtils::get_separator() + "test.txt";
-  REQUIRE_FALSE(FileUtils::last_write_time(test_file).has_value()); //non existent file should not return last w.t.
+  REQUIRE_FALSE(FileUtils::last_write_time(test_file).has_value());  // non existent file should not return last w.t.
   REQUIRE(FileUtils::last_write_time_point(test_file) == (time_point<file_clock, seconds>{}));
 
   std::this_thread::sleep_for(std::chrono::milliseconds(10));

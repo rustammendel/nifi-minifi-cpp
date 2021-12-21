@@ -169,7 +169,6 @@ inline int64_t delete_dir(const std::string &path, bool delete_files_recursively
 
 inline std::chrono::time_point<std::chrono::file_clock,
                                std::chrono::seconds> last_write_time_point(const std::string &path) {
-
   std::error_code ec;
   auto result = std::filesystem::last_write_time(path, ec);
   if (ec.value() == 0) {
