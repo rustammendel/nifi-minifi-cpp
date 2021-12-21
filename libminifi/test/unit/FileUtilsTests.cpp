@@ -312,6 +312,66 @@ TEST_CASE("TestFileUtils::getFullPath", "[TestGetFullPath]") {
 #endif
 }
 
+TEST_CASE("FileUtils::last_write_time and last_write_time_point work", "[last_write_time][last_write_time_point]") {
+  using namespace std::chrono;
+  namespace fs = std::filesystem;
+
+  fs::file_time_type time_before_write = file_clock::now();
+  time_point<file_clock, seconds> time_point_before_write = time_point_cast<seconds>(file_clock::now());
+
+  TestController testController;
+
+  std::string dir = testController.createTempDirectory();
+
+  std::string test_file = dir + FileUtils::get_separator() + "test.txt";
+  REQUIRE_FALSE(FileUtils::last_write_time(test_file).has_value()); //non existent file should not return last w.t.
+  REQUIRE(FileUtils::last_write_time_point(test_file) == (time_point<file_clock, seconds>{}));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::ofstream test_file_stream(test_file);
+  test_file_stream << "foo\n";
+  test_file_stream.flush();
+
+  fs::file_time_type time_after_first_write = file_clock::now();
+  time_point<file_clock, seconds> time_point_after_first_write = time_point_cast<seconds>(file_clock::now());
+
+  fs::file_time_type first_mtime = FileUtils::last_write_time(test_file).value();
+  REQUIRE(first_mtime >= time_before_write);
+  REQUIRE(first_mtime <= time_after_first_write);
+
+  time_point<file_clock, seconds> first_mtime_time_point = FileUtils::last_write_time_point(test_file);
+  REQUIRE(first_mtime_time_point >= time_point_before_write);
+  REQUIRE(first_mtime_time_point <= time_point_after_first_write);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  test_file_stream << "bar\n";
+  test_file_stream.flush();
+
+  fs::file_time_type time_after_second_write = file_clock::now();
+  time_point<file_clock, seconds> time_point_after_second_write = time_point_cast<seconds>(file_clock::now());
+
+  fs::file_time_type second_mtime = FileUtils::last_write_time(test_file).value();
+  REQUIRE(second_mtime >= first_mtime);
+  REQUIRE(second_mtime >= time_after_first_write);
+  REQUIRE(second_mtime <= time_after_second_write);
+
+  time_point<file_clock, seconds> second_mtime_time_point = FileUtils::last_write_time_point(test_file);
+  REQUIRE(second_mtime_time_point >= first_mtime_time_point);
+  REQUIRE(second_mtime_time_point >= time_point_after_first_write);
+  REQUIRE(second_mtime_time_point <= time_point_after_second_write);
+
+  test_file_stream.close();
+
+  // On Windows it would rarely occur that the last_write_time is off by 1 from the previous check
+#ifndef WIN32
+  fs::file_time_type third_mtime = FileUtils::last_write_time(test_file).value();
+  REQUIRE(third_mtime == second_mtime);
+
+  time_point<file_clock, seconds> third_mtime_time_point = FileUtils::last_write_time_point(test_file);
+  REQUIRE(third_mtime_time_point == second_mtime_time_point);
+#endif
+}
+
 TEST_CASE("FileUtils::file_size works", "[file_size]") {
   TestController testController;
 

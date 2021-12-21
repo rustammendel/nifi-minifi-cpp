@@ -124,6 +124,7 @@ inline char get_separator(bool /*force_posix*/ = false) {
   return '/';
 }
 #endif
+time_t to_time_t(const std::filesystem::file_time_type time);
 
 inline std::string normalize_path_separators(std::string path, bool force_posix = false) {
   const auto normalize_separators = [force_posix](const char c) {
@@ -166,20 +167,24 @@ inline int64_t delete_dir(const std::string &path, bool delete_files_recursively
   return 0;
 }
 
-time_t to_time_t(const std::filesystem::file_time_type time);
-
 inline std::chrono::time_point<std::chrono::file_clock,
                                std::chrono::seconds> last_write_time_point(const std::string &path) {
-  return std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(path));
-}
 
-inline uint64_t last_write_time(const std::string &path) {
   std::error_code ec;
   auto result = std::filesystem::last_write_time(path, ec);
   if (ec.value() == 0) {
-    return to_time_t(result);
+    return std::chrono::time_point_cast<std::chrono::seconds>(result);
   }
-  return 0;
+  return std::chrono::time_point<std::chrono::file_clock, std::chrono::seconds>{};
+}
+
+inline const std::optional<std::filesystem::file_time_type> last_write_time(const std::string &path) {
+  std::error_code ec;
+  auto result = std::filesystem::last_write_time(path, ec);
+  if (ec.value() == 0) {
+    return result;
+  }
+  return std::nullopt;
 }
 
 inline uint64_t file_size(const std::string &path) {
