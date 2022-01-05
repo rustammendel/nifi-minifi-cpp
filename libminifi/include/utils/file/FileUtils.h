@@ -186,6 +186,12 @@ inline const std::optional<std::filesystem::file_time_type> last_write_time(cons
   return std::nullopt;
 }
 
+inline bool set_last_write_time(const std::string &path, std::filesystem::file_time_type new_time) {
+  std::error_code ec;
+  std::filesystem::last_write_time(path, new_time, ec);
+  return ec.value() == 0;
+}
+
 inline uint64_t file_size(const std::string &path) {
 #ifdef WIN32
   struct _stat64 result;
