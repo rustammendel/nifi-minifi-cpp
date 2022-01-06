@@ -487,8 +487,8 @@ TEST_CASE("PutFileCreateDirectoryTest", "[PutFileProperties]") {
     plan->runNextProcessor();
     plan->runNextProcessor();
 
-    REQUIRE(std::filesystem::exists(putfiledir));
-    REQUIRE(std::filesystem::exists(path));
+    REQUIRE(utils::file::exists(putfiledir));
+    REQUIRE(utils::file::exists(path));
   }
 
   SECTION("with an empty file and create directory property set to false") {
@@ -502,8 +502,8 @@ TEST_CASE("PutFileCreateDirectoryTest", "[PutFileProperties]") {
     plan->runNextProcessor();
     plan->runNextProcessor();
 
-    REQUIRE_FALSE(std::filesystem::exists(putfiledir));
-    REQUIRE_FALSE(std::filesystem::exists(path));
+    REQUIRE_FALSE(utils::file::exists(putfiledir));
+    REQUIRE_FALSE(utils::file::exists(path));
     std::string check = "Failed to create empty file: " + path;
     REQUIRE(LogTestController::getInstance().contains(check));
   }
@@ -519,8 +519,8 @@ TEST_CASE("PutFileCreateDirectoryTest", "[PutFileProperties]") {
     plan->runNextProcessor();
     plan->runNextProcessor();
 
-    REQUIRE(std::filesystem::exists(putfiledir));
-    REQUIRE(std::filesystem::exists(path));
+    REQUIRE(utils::file::exists(putfiledir));
+    REQUIRE(utils::file::exists(path));
   }
 
   SECTION("with a non-empty file and create directory property set to false") {
@@ -535,8 +535,8 @@ TEST_CASE("PutFileCreateDirectoryTest", "[PutFileProperties]") {
     plan->runNextProcessor();
     plan->runNextProcessor();
 
-    REQUIRE_FALSE(std::filesystem::exists(putfiledir));
-    REQUIRE_FALSE(std::filesystem::exists(path));
+    REQUIRE_FALSE(utils::file::exists(putfiledir));
+    REQUIRE_FALSE(utils::file::exists(path));
     std::string check = "PutFile commit put file operation to " + path + " failed because write failed";
     REQUIRE(LogTestController::getInstance().contains(check));
   }

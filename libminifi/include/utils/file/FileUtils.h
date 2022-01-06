@@ -273,7 +273,7 @@ inline void addFilesMatchingExtension(const std::shared_ptr<core::logging::Logge
                                       const std::string &originalPath,
                                       const std::string &extension,
                                       std::vector<std::string> &accruedFiles) {
-  if (!std::filesystem::exists(originalPath)) {
+  if (!utils::file::exists(originalPath)) {
     logger->log_warn("Failed to open directory: %s", originalPath.c_str());
     return;
   }
@@ -332,7 +332,7 @@ inline void list_dir(const std::string& dir,
                      const std::shared_ptr<core::logging::Logger> &logger,
                      std::function<bool(const std::string&)> dir_callback) {
   logger->log_debug("Performing file listing against %s", dir);
-  if (!std::filesystem::exists(dir)) {
+  if (!utils::file::exists(dir)) {
     logger->log_warn("Failed to open directory: %s", dir.c_str());
     return;
   }
