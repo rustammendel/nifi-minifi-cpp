@@ -240,6 +240,12 @@ inline bool is_directory(const char *path) {
   return std::filesystem::is_directory(path);
 }
 
+inline bool exists(const std::string &path) {
+  std::error_code ec;
+  bool result = std::filesystem::exists(path, ec);
+  return ec.value() == 0 && result;
+}
+
 inline int create_dir(const std::string &path, bool recursive = true) {
   std::filesystem::path dir(path);
   std::error_code ec;

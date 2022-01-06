@@ -282,7 +282,6 @@ TEST_CASE("TestFileUtils::addFilesMatchingExtension", "[TestAddFilesMatchingExte
   REQUIRE(LogTestController::getInstance().contains("Failed to open directory: " + fakeDir));
 }
 
-
 TEST_CASE("TestFileUtils::getFullPath", "[TestGetFullPath]") {
   TestController testController;
 
@@ -510,10 +509,9 @@ TEST_CASE("FileUtils::exists", "[TestExists]") {
   std::ofstream outfile(path, std::ios::out | std::ios::binary);
   auto invalid_path = dir + FileUtils::get_separator() + "test_file2.txt";
 
-  REQUIRE(FileUtils::exists(path));
-  REQUIRE(!FileUtils::exists(invalid_path));
+  REQUIRE(utils::file::exists(path));
+  REQUIRE(!utils::file::exists(invalid_path));
 }
-
 
 TEST_CASE("TestFileUtils::delete_dir should fail with empty path", "[TestEmptyDeleteDir]") {
   TestController testController;
