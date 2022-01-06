@@ -47,8 +47,7 @@ class ExecutePythonProcessor : public core::Processor {
       : Processor(name, uuid),
         processor_initialized_(false),
         python_dynamic_(false),
-        reload_on_script_change_(true),
-        last_script_write_time_(0) {
+        reload_on_script_change_(true) {
   }
 
   EXTENSIONAPI static const core::Property ScriptFile;
