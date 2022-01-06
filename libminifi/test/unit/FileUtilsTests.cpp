@@ -502,6 +502,19 @@ TEST_CASE("FileUtils::set_permissions", "[TestSetPermissions]") {
 }
 #endif
 
+TEST_CASE("FileUtils::exists", "[TestExists]") {
+  TestController testController;
+
+  auto dir = testController.createTempDirectory();
+  auto path = dir + FileUtils::get_separator() + "test_file.txt";
+  std::ofstream outfile(path, std::ios::out | std::ios::binary);
+  auto invalid_path = dir + FileUtils::get_separator() + "test_file2.txt";
+
+  REQUIRE(FileUtils::exists(path));
+  REQUIRE(!FileUtils::exists(invalid_path));
+}
+
+
 TEST_CASE("TestFileUtils::delete_dir should fail with empty path", "[TestEmptyDeleteDir]") {
   TestController testController;
   REQUIRE(FileUtils::delete_dir("") != 0);
