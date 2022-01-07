@@ -243,7 +243,10 @@ inline bool is_directory(const char *path) {
 inline bool exists(const std::string &path) {
   std::error_code ec;
   bool result = std::filesystem::exists(path, ec);
-  return ec.value() == 0 && result;
+  if (ec.value() == 0) {
+    return result;
+  }
+  return false;
 }
 
 inline int create_dir(const std::string &path, bool recursive = true) {
